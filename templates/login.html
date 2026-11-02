@@ -4,45 +4,61 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProctorAI | Secure Exam Portal</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/app-theme.css">
+<script src="/static/theme.js" defer></script>
 </head>
 <body class="auth-page">
-<canvas id="matrix-canvas"></canvas>
-<div class="shell">
-  <div class="card">
-    <div class="corner-tr"></div><div class="corner-bl"></div>
+<main class="shell auth-shell">
+  <section class="auth-intro" aria-label="About ProctorAI">
     <div class="brand">
-      <span class="brand-logo">PROCTOR<span style="color:#00cc33">AI</span></span>
-      <span class="brand-sub"><span class="status-dot"></span>SECURE EXAM PORTAL · V2</span>
+      <span class="brand-mark" aria-hidden="true">P</span>
+      <span><span class="brand-logo">ProctorAI</span><span class="brand-sub">Online assessment platform</span></span>
+    </div>
+    <h1 class="auth-title">A calmer, clearer way to take assessments.</h1>
+    <p class="auth-lead">A focused exam experience with clear instructions and transparent behavior monitoring.</p>
+    <ul class="intro-points">
+      <li><span class="point-icon">01</span><span>Stay focused on your assessment</span></li>
+      <li><span class="point-icon">02</span><span>Know when monitoring is active</span></li>
+      <li><span class="point-icon">03</span><span>Review results after submission</span></li>
+    </ul>
+  </section>
+
+  <section class="card auth-card" aria-label="Sign in or create an account">
+    <div class="auth-card-header">
+      <div>
+        <h2 class="auth-card-heading">Welcome</h2>
+        <p class="auth-card-copy">Sign in to continue to your assessment workspace.</p>
+      </div>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme"><span class="theme-icon">☾</span></button>
     </div>
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('login')">[ LOGIN ]</button>
-      <button class="tab-btn" onclick="switchTab('signup')">[ REGISTER ]</button>
+      <button class="tab-btn active" type="button" onclick="switchTab('login')">Sign in</button>
+      <button class="tab-btn" type="button" onclick="switchTab('signup')">Create account</button>
     </div>
 
     <!-- LOGIN -->
     <div class="form-panel active" id="panel-login">
-      <div class="wcam-badge"><div class="wcam-dot"></div>WEBCAM MONITORING ACTIVE DURING EXAM SESSION</div>
+      <div class="wcam-badge"><div class="wcam-dot"></div>Monitoring starts only when an exam begins</div>
       <div class="alert err" id="login-err">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span id="login-err-msg">ACCESS DENIED — Invalid credentials.</span>
+        <span id="login-err-msg">Invalid credentials.</span>
       </div>
       <div class="alert ok" id="login-ok">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><polyline points="20 6 9 17 4 12"/></svg>
-        <span id="login-ok-msg">IDENTITY VERIFIED — Initializing exam portal...</span>
+        <span id="login-ok-msg">Signed in. Opening your workspace...</span>
       </div>
       <div class="field">
-        <label><span class="lprefix">&gt;</span>Email address</label>
-        <input type="email" id="login-email" placeholder="user@university.edu">
+        <label for="login-email">Email address</label>
+        <input type="email" id="login-email" placeholder="you@university.edu" autocomplete="email">
       </div>
       <div class="field">
-        <label><span class="lprefix">&gt;</span>Password</label>
-        <input type="password" id="login-password" placeholder="••••••••••••">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
       </div>
-      <button class="submit-btn" onclick="handleLogin()" id="login-btn">AUTHENTICATE</button>
-      <div class="divider">OR</div>
-      <div class="switch-link">No account? <a href="#" onclick="switchTab('signup')">REGISTER ACCESS</a></div>
+      <button class="submit-btn" type="button" onclick="handleLogin()" id="login-btn">Sign in</button>
+      <div class="divider">New here?</div>
+      <div class="switch-link">Create an account using the tab above.</div>
     </div>
 
     <!-- SIGNUP -->
@@ -53,9 +69,9 @@
       </div>
       <div class="alert ok" id="signup-ok">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>ACCESS GRANTED — Account registered successfully.</span>
+        <span>Account registered successfully.</span>
       </div>
-      <div style="margin-bottom:0.4rem;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;"><span class="lprefix">&gt;</span>Select role</div>
+      <div class="field"><label>Select account type</label></div>
       <div class="role-grid">
         <div class="role-opt">
           <input type="radio" name="role" id="r-student" value="student" checked>
@@ -71,60 +87,26 @@
         </div>
       </div>
       <div class="row2">
-        <div class="field"><label><span class="lprefix">&gt;</span>First name</label><input type="text" id="s-fname" placeholder="Arjun"></div>
-        <div class="field"><label><span class="lprefix">&gt;</span>Last name</label><input type="text" id="s-lname" placeholder="Singh"></div>
+        <div class="field"><label for="s-fname">First name</label><input type="text" id="s-fname" placeholder="First name" autocomplete="given-name"></div>
+        <div class="field"><label for="s-lname">Last name</label><input type="text" id="s-lname" placeholder="Last name" autocomplete="family-name"></div>
       </div>
-      <div class="field"><label><span class="lprefix">&gt;</span>Roll No. / Employee ID</label><input type="text" id="s-roll" placeholder="CSE2023001"></div>
-      <div class="field"><label><span class="lprefix">&gt;</span>Email address</label><input type="email" id="s-email" placeholder="you@university.edu"></div>
+      <div class="field"><label for="s-roll">Roll number / Employee ID</label><input type="text" id="s-roll" placeholder="e.g. CSE2023001"></div>
+      <div class="field"><label for="s-email">Email address</label><input type="email" id="s-email" placeholder="you@university.edu" autocomplete="email"></div>
       <div class="field">
-        <label><span class="lprefix">&gt;</span>Password</label>
-        <input type="password" id="s-pass" placeholder="Min 8 characters" oninput="checkStr(this.value)">
+        <label for="s-pass">Password</label>
+        <input type="password" id="s-pass" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkStr(this.value)">
         <div class="str-bar"><div class="str-fill" id="str-fill"></div></div>
         <div class="str-label" id="str-label"></div>
       </div>
-      <div class="field"><label><span class="lprefix">&gt;</span>Confirm password</label><input type="password" id="s-conf" placeholder="Re-enter password"></div>
-      <button class="submit-btn" onclick="handleSignup()" id="signup-btn">CREATE SECURE ACCOUNT</button>
-      <div class="divider">OR</div>
-      <div class="switch-link">Already registered? <a href="#" onclick="switchTab('login')">LOGIN HERE</a></div>
+      <div class="field"><label for="s-conf">Confirm password</label><input type="password" id="s-conf" placeholder="Enter password again" autocomplete="new-password"></div>
+      <button class="submit-btn" type="button" onclick="handleSignup()" id="signup-btn">Create account</button>
+      <div class="divider">Already registered?</div>
+      <div class="switch-link">Use the Sign in tab above.</div>
     </div>
-  </div>
-</div>
+  </section>
+</main>
 
 <script>
-// Matrix Rain
-(function(){
-  const canvas=document.getElementById('matrix-canvas');
-  const ctx=canvas.getContext('2d');
-  let W,H,cols,drops;
-  const CHARS='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()[]{}|;:,.?/~`ﾊﾋｼﾀﾁﾃﾄﾘｳｺﾈｴｶｷﾑﾕﾗｾﾈｵあいうえおアイウエオ';
-  const FS=14;
-  function init(){
-    W=canvas.width=window.innerWidth;
-    H=canvas.height=window.innerHeight;
-    cols=Math.floor(W/FS);
-    drops=Array.from({length:cols},()=>Math.random()*-80);
-  }
-  function draw(){
-    ctx.fillStyle='rgba(2,13,2,0.055)';
-    ctx.fillRect(0,0,W,H);
-    for(let i=0;i<cols;i++){
-      const ch=CHARS[Math.floor(Math.random()*CHARS.length)];
-      const y=drops[i]*FS;
-      ctx.fillStyle='#afffcf';
-      ctx.font=`bold ${FS}px "Share Tech Mono",monospace`;
-      ctx.fillText(ch,i*FS,y);
-      ctx.fillStyle=i%5===0?'#00ff41':'#00881a';
-      ctx.font=`${FS}px "Share Tech Mono",monospace`;
-      ctx.fillText(CHARS[Math.floor(Math.random()*CHARS.length)],i*FS,y-FS);
-      if(y>H&&Math.random()>0.975)drops[i]=0;
-      drops[i]+=0.5;
-    }
-  }
-  init();
-  setInterval(draw,45);
-  window.addEventListener('resize',init);
-})();
-
 // Auth — now calls Flask backend
 function switchTab(t){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='signup')));
@@ -143,7 +125,7 @@ function checkStr(v){
   const lbl=document.getElementById('str-label');
   let s=0;
   if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
-  const lvl=[{w:'0%',bg:'transparent',txt:''},{w:'25%',bg:'#ff2d55',txt:'WEAK'},{w:'50%',bg:'#ffaa00',txt:'FAIR'},{w:'75%',bg:'#00aaff',txt:'GOOD'},{w:'100%',bg:'#00ff41',txt:'STRONG'}][s];
+  const lvl=[{w:'0%',bg:'transparent',txt:''},{w:'25%',bg:'#c43a48',txt:'WEAK'},{w:'50%',bg:'#bd7800',txt:'FAIR'},{w:'75%',bg:'#365fe5',txt:'GOOD'},{w:'100%',bg:'#16845b',txt:'STRONG'}][s];
   fill.style.width=lvl.w;fill.style.background=lvl.bg;lbl.textContent=lvl.txt;lbl.style.color=lvl.bg;
 }
 
@@ -156,7 +138,7 @@ async function handleSignup(){
   const pw=document.getElementById('s-pass').value;
   const cf=document.getElementById('s-conf').value;
   const role=document.querySelector('input[name="role"]:checked').value;
-  const err=m=>{document.getElementById('signup-err-msg').textContent='ERROR — '+m;show('signup-err');};
+  const err=m=>{document.getElementById('signup-err-msg').textContent=m;show('signup-err');};
 
   if(!fn||!ln){bad('s-fname');bad('s-lname');return err('Full name required.');}
   if(!rn){bad('s-roll');return err('Roll number required.');}
@@ -165,7 +147,7 @@ async function handleSignup(){
   if(pw!==cf){bad('s-conf');return err('Passwords do not match.');}
 
   const btn=document.getElementById('signup-btn');
-  btn.textContent='REGISTERING...';btn.classList.add('loading');
+  btn.textContent='Creating account…';btn.classList.add('loading');btn.disabled=true;
 
   try{
     const res=await fetch('/register',{
@@ -173,10 +155,10 @@ async function handleSignup(){
       body:JSON.stringify({fname:fn,lname:ln,roll:rn,email:em,password:pw,role})
     });
     const data=await res.json();
-    if(!data.ok){btn.textContent='CREATE SECURE ACCOUNT';btn.classList.remove('loading');return err(data.msg);}
+    if(!data.ok){btn.textContent='Create account';btn.classList.remove('loading');btn.disabled=false;return err(data.msg);}
     show('signup-ok');
-    setTimeout(()=>{switchTab('login');btn.textContent='CREATE SECURE ACCOUNT';btn.classList.remove('loading');},1800);
-  }catch(e){btn.textContent='CREATE SECURE ACCOUNT';btn.classList.remove('loading');err('Network error.');}
+    setTimeout(()=>{switchTab('login');btn.textContent='Create account';btn.classList.remove('loading');btn.disabled=false;},1200);
+  }catch(e){btn.textContent='Create account';btn.classList.remove('loading');btn.disabled=false;err('Unable to connect. Please try again.');}
 }
 
 async function handleLogin(){
@@ -187,7 +169,7 @@ async function handleLogin(){
   if(!pw){bad('login-password');return;}
 
   const btn=document.getElementById('login-btn');
-  btn.textContent='AUTHENTICATING...';btn.classList.add('loading');
+  btn.textContent='Signing in…';btn.classList.add('loading');btn.disabled=true;
 
   try{
     const res=await fetch('/login',{
@@ -196,15 +178,15 @@ async function handleLogin(){
     });
     const data=await res.json();
     if(!data.ok){
-      document.getElementById('login-err-msg').textContent='ACCESS DENIED — '+data.msg;
+      document.getElementById('login-err-msg').textContent=data.msg;
       bad('login-email');bad('login-password');show('login-err');
-      btn.textContent='AUTHENTICATE';btn.classList.remove('loading');
+      btn.textContent='Sign in';btn.classList.remove('loading');btn.disabled=false;
       return;
     }
-    document.getElementById('login-ok-msg').textContent='IDENTITY VERIFIED — Welcome, '+data.msg.replace('Welcome, ','');
+    document.getElementById('login-ok-msg').textContent=data.msg;
     show('login-ok');
-    setTimeout(()=>{window.location.href=data.redirect;},1500);
-  }catch(e){btn.textContent='AUTHENTICATE';btn.classList.remove('loading');}
+    setTimeout(()=>{window.location.href=data.redirect;},600);
+  }catch(e){btn.textContent='Sign in';btn.classList.remove('loading');btn.disabled=false;document.getElementById('login-err-msg').textContent='Unable to connect. Please try again.';show('login-err');}
 }
 </script>
 </body>

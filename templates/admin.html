@@ -4,32 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard | ProctorAI</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/app-theme.css">
+<script src="/static/theme.js" defer></script>
 </head>
 <body class="admin-page">
 
 <!-- Sidebar -->
 <aside class="admin-sidebar">
   <div class="sidebar-brand">
-    <span class="brand-logo-sm">PROCTOR<span style="color:#00cc33">AI</span></span>
-    <span class="brand-sub-sm"><span class="status-dot"></span>ADMIN</span>
+    <span class="sidebar-mark" aria-hidden="true">P</span>
+    <span><span class="brand-logo-sm">ProctorAI</span><span class="brand-sub-sm">Exam workspace</span></span>
   </div>
   <nav class="sidebar-nav">
-    <a href="/admin" class="nav-link active">> Dashboard</a>
-    <a href="/logout" class="nav-link">> Logout</a>
+    <a href="/admin" class="nav-link active">Dashboard</a>
+    <a href="/logout" class="nav-link">Sign out</a>
   </nav>
   <div class="sidebar-footer">
-    <span class="admin-user">> {{ user.fname }} {{ user.lname }}</span>
-    <span class="admin-role">[EXAMINER]</span>
+    <span class="admin-user">{{ user.fname }} {{ user.lname }}</span>
+    <span class="admin-role">Examiner</span>
   </div>
 </aside>
 
 <!-- Main -->
 <main class="admin-main">
+  <div class="admin-topbar">
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme"><span class="theme-icon">☾</span></button>
+  </div>
   <div class="admin-header">
-    <h1 class="admin-title">> ADMIN DASHBOARD</h1>
-    <p class="admin-sub">Real-time exam proctoring & malpractice detection powered by Isolation Forest ML</p>
+    <h1 class="admin-title">Exam overview</h1>
+    <p class="admin-sub">Review submitted assessment sessions and behavior indicators. Automated flags are prompts for human review, not proof of misconduct.</p>
   </div>
 
   <!-- Stat cards -->
@@ -40,7 +44,7 @@
       </div>
       <div>
         <span class="stat-num" id="totalStudents">0</span>
-        <span class="stat-label">> TOTAL STUDENTS</span>
+        <span class="stat-label">Submissions</span>
       </div>
     </div>
     <div class="stat-card">
@@ -49,7 +53,7 @@
       </div>
       <div>
         <span class="stat-num" id="normalStudents">0</span>
-        <span class="stat-label">> NORMAL</span>
+        <span class="stat-label">No behavior alert</span>
       </div>
     </div>
     <div class="stat-card">
@@ -58,7 +62,7 @@
       </div>
       <div>
         <span class="stat-num" id="suspiciousStudents">0</span>
-        <span class="stat-label">> FLAGGED</span>
+        <span class="stat-label">Review recommended</span>
       </div>
     </div>
   </div>
@@ -66,23 +70,24 @@
   <!-- Table -->
   <div class="table-container">
     <div class="table-top">
-      <h2>> STUDENT RECORDS</h2>
-      <button class="nav-btn" id="refreshBtn">[ REFRESH ]</button>
+      <h2>Assessment submissions</h2>
+      <button class="nav-btn" id="refreshBtn" type="button">Refresh list</button>
     </div>
 
     <div class="table-empty" id="tableEmpty">
       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <p>No exam submissions yet.</p>
+      <p id="emptyTitle">No exam submissions yet.</p>
       <span>Students will appear here after completing their exams.</span>
     </div>
+    <p id="loadStatus" role="status" aria-live="polite"></p>
 
     <div class="table-scroll" id="tableScroll" style="display:none;">
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th><th>Name</th><th>Score</th><th>Time/Q</th>
-            <th>Tabs</th><th>Idle</th><th>Ans.Chg</th><th>Copy</th>
-            <th>Head</th><th>Violations</th><th>Anomaly</th><th>Status</th>
+            <th>Student ID</th><th>Name</th><th>Score</th><th>Time / question</th>
+            <th>Tab changes</th><th>Idle</th><th>Answer changes</th><th>Copy/paste</th>
+            <th>Head alerts</th><th>Alerts</th><th>Model score</th><th>Review status</th>
           </tr>
         </thead>
         <tbody id="studentTableBody"></tbody>
@@ -92,10 +97,17 @@
 </main>
 
 <script>
+const loadStatus = document.getElementById('loadStatus');
+const refreshButton = document.getElementById('refreshBtn');
+
 async function loadStudents(){
+  refreshButton.disabled = true;
+  loadStatus.textContent = 'Loading submissions…';
   try{
     const res=await fetch('/api/students');
+    if(!res.ok) throw new Error(`Request failed (${res.status})`);
     const students=await res.json();
+    if(!Array.isArray(students)) throw new Error('Unexpected response from server');
     document.getElementById('totalStudents').textContent=students.length;
     const normal=students.filter(s=>s.prediction===1).length;
     const suspicious=students.filter(s=>s.prediction===-1).length;
@@ -105,6 +117,7 @@ async function loadStudents(){
     if(students.length===0){
       document.getElementById('tableEmpty').style.display='flex';
       document.getElementById('tableScroll').style.display='none';
+      loadStatus.textContent='List updated just now';
       return;
     }
     document.getElementById('tableEmpty').style.display='none';
@@ -116,25 +129,34 @@ async function loadStudents(){
       const flagged=s.prediction===-1;
       const row=document.createElement('tr');
       if(flagged)row.classList.add('row-flagged');
-      row.innerHTML=`
-        <td>${s.student_id}</td>
-        <td>${s.student_name}</td>
-        <td>${s.score}</td>
-        <td>${s.time_per_question}</td>
-        <td>${s.tab_switch_count}</td>
-        <td>${s.idle_time}</td>
-        <td>${s.answer_change_count}</td>
-        <td>${s.copy_paste_attempts}</td>
-        <td>${s.head_movement_count}</td>
-        <td>${s.violation_count || 0}${s.auto_submitted ? ' ⛔' : ''}</td>
-        <td>${s.anomaly_score}</td>
-        <td><span class="badge ${flagged?'badge-warn':'badge-ok'}">${flagged?'⚠ SUSPICIOUS':'✓ NORMAL'}</span></td>
-      `;
+      [
+        s.student_id, s.student_name, s.score, `${s.time_per_question}s`,
+        s.tab_switch_count, `${s.idle_time}s`, s.answer_change_count,
+        s.copy_paste_attempts, s.head_movement_count,
+        `${s.violation_count || 0}${s.auto_submitted ? ' (auto-submitted)' : ''}`,
+        s.anomaly_score
+      ].forEach(value => {
+        const cell = document.createElement('td');
+        cell.textContent = value == null ? '—' : String(value);
+        row.appendChild(cell);
+      });
+      const statusCell = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = `badge ${flagged ? 'badge-warn' : 'badge-ok'}`;
+      badge.textContent = flagged ? 'Review recommended' : 'No alert';
+      statusCell.appendChild(badge);
+      row.appendChild(statusCell);
       tbody.appendChild(row);
     });
-  }catch(err){console.error('Failed to load:',err);}
+    loadStatus.textContent='List updated just now';
+  }catch(err){
+    console.error('Failed to load submissions:',err);
+    loadStatus.textContent='Unable to load submissions. Check your connection and try again.';
+  }finally{
+    refreshButton.disabled = false;
+  }
 }
-document.getElementById('refreshBtn').addEventListener('click',loadStudents);
+refreshButton.addEventListener('click',loadStudents);
 loadStudents();
 setInterval(loadStudents,10000);
 </script>

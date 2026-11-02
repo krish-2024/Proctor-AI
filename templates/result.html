@@ -4,14 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exam Results | ProctorAI</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/app-theme.css">
+<script src="/static/theme.js" defer></script>
 </head>
 <body class="result-page">
-<canvas id="matrix-canvas"></canvas>
 <div class="shell">
   <div class="result-card">
-    <div class="corner-tr"></div><div class="corner-bl"></div>
+    <div class="result-toolbar">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme"><span class="theme-icon">☾</span></button>
+    </div>
 
     <!-- Header -->
     <div class="result-header">
@@ -20,13 +22,13 @@
         <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
       <h1 class="result-title">EXAM COMPLETED</h1>
-      <div class="status-badge badge-ok">> NO SUSPICIOUS ACTIVITY DETECTED</div>
+      <div class="status-badge badge-ok">No unusual behavior flagged</div>
       {% else %}
       <div class="result-icon-ring warn">
         <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
       <h1 class="result-title">EXAM COMPLETED</h1>
-      <div class="status-badge badge-warn">> SUSPICIOUS ACTIVITY FLAGGED</div>
+      <div class="status-badge badge-warn">Behavior alert — examiner review recommended</div>
       {% endif %}
     </div>
 
@@ -42,11 +44,11 @@
           <span class="score-den">/ {{ result.total }}</span>
         </div>
       </div>
-      <div class="score-label">> YOUR SCORE</div>
+      <div class="score-label">Your score</div>
     </div>
 
     <!-- Behavior metrics -->
-    <div class="metrics-title">> BEHAVIOR ANALYSIS</div>
+    <div class="metrics-title">Session summary</div>
     <div class="metrics-grid">
       <div class="metric-box">
         <div class="metric-icon">⏱</div>
@@ -74,27 +76,16 @@
       </div>
       <div class="metric-box {% if result.label != 'Normal' %}metric-alert{% endif %}">
         <div class="metric-icon">🤖</div>
-        <div><span class="metric-name">ANOMALY SCORE</span><span class="metric-val">{{ result.anomaly_score }}</span></div>
+        <div><span class="metric-name">MODEL SCORE</span><span class="metric-val">{{ result.anomaly_score }}</span></div>
       </div>
     </div>
+    <p class="result-disclaimer">Behavior indicators are automated signals for review, not proof of misconduct. Results from this demonstration model should not be used as the sole basis for academic decisions.</p>
 
     <!-- Actions -->
     <div class="result-actions">
-      <a href="/logout" class="submit-btn" style="text-align:center">[ LOGOUT ]</a>
+      <a href="/logout" class="submit-btn" style="text-align:center">Finish and sign out</a>
     </div>
   </div>
 </div>
-
-<script>
-// Matrix Rain (same as login)
-(function(){
-  const canvas=document.getElementById('matrix-canvas');const ctx=canvas.getContext('2d');
-  let W,H,cols,drops;
-  const CHARS='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*ﾊﾋｼﾀﾁﾃﾄﾘｳｺﾈｴｶｷﾑﾕﾗ';const FS=14;
-  function init(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;cols=Math.floor(W/FS);drops=Array.from({length:cols},()=>Math.random()*-80);}
-  function draw(){ctx.fillStyle='rgba(2,13,2,0.055)';ctx.fillRect(0,0,W,H);for(let i=0;i<cols;i++){const ch=CHARS[Math.floor(Math.random()*CHARS.length)];const y=drops[i]*FS;ctx.fillStyle='#afffcf';ctx.font=`bold ${FS}px "Share Tech Mono",monospace`;ctx.fillText(ch,i*FS,y);ctx.fillStyle=i%5===0?'#00ff41':'#00881a';ctx.font=`${FS}px "Share Tech Mono",monospace`;ctx.fillText(CHARS[Math.floor(Math.random()*CHARS.length)],i*FS,y-FS);if(y>H&&Math.random()>0.975)drops[i]=0;drops[i]+=0.5;}}
-  init();setInterval(draw,45);window.addEventListener('resize',init);
-})();
-</script>
 </body>
 </html>

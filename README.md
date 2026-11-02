@@ -17,6 +17,7 @@ The recorded behavior is passed through an Isolation Forest model to detect unus
 ## Features
 
 - Student and examiner login flow
+- Responsive light and dark themes
 - Exam portal with MCQ and written questions
 - webcam permission gate before exam starts
 - violation tracking with automatic submission after repeated suspicious behavior
@@ -72,6 +73,8 @@ ProctorAI/
 │   ├── result.html
 │   └── admin.html
 ├── static/
+│   ├── app-theme.css
+│   ├── theme.js
 │   ├── style.css
 │   └── script.js
 ├── users.json
@@ -83,9 +86,9 @@ ProctorAI/
 
 ## Notes
 
-- The ML model is trained automatically on first run.
-- This project is designed for learning, portfolio presentation, and academic use.
-- For GitHub publishing, push it using your own GitHub account and your own repository.
+- The model is trained automatically on synthetic sample data. Its alerts are for demonstration only and do not establish that misconduct occurred.
+- User accounts are stored locally in a JSON file and exam submissions are held in memory; records are not production-persistent.
+- This project is for learning, portfolio presentation, and academic demonstration. Do not use it as the sole basis for academic decisions or for high-stakes exams.
 
 ## License
 

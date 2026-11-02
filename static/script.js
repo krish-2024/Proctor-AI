@@ -102,7 +102,13 @@
         }
 
         // Send the exam data
-        await sendExamData(true);
+        const redirectUrl = await sendExamData(true);
+        if (!redirectUrl) {
+            if (violationOverlay) violationOverlay.style.display = "none";
+            showAlert("We could not submit your assessment. Please check your connection and submit again.");
+            state.submitted = false;
+            return;
+        }
 
         // Stop webcam
         const videoEl = document.getElementById("webcamVideo");
@@ -112,7 +118,7 @@
 
         // Redirect after delay
         setTimeout(() => {
-            window.location.href = "/result";
+            window.location.href = redirectUrl;
         }, 4000);
     }
 
@@ -124,22 +130,30 @@
         const gateStatus = document.getElementById("gateStatus");
         const enableBtn  = document.getElementById("enableCamBtn");
 
-        enableBtn.textContent = "[ INITIALIZING... ]";
+        enableBtn.textContent = "Connecting to camera…";
         enableBtn.classList.add("loading");
 
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            if (gateStatus) gateStatus.textContent = "Camera access is not available in this browser.";
+            enableBtn.textContent = "Try camera again";
+            enableBtn.classList.remove("loading");
+            return;
+        }
+
         navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, facingMode: "user" } })
-            .then(stream => {
+            .then(async stream => {
                 const videoEl = document.getElementById("webcamVideo");
                 videoEl.srcObject = stream;
-                videoEl.play();
+                await videoEl.play();
                 state.webcamReady = true;
 
                 // Hide gate, show exam
                 webcamGate.style.display = "none";
                 examStatusBar.style.display = "flex";
-                examLayout.style.display = "flex";
+                examLayout.style.display = "grid";
                 state.examStarted = true;
                 state.questionStart = Date.now();
+                state.lastActivity = Date.now();
 
                 // Initialize face mesh after webcam is ready
                 setTimeout(initFaceMesh, 500);
@@ -147,10 +161,10 @@
             .catch(err => {
                 console.error("Webcam denied:", err);
                 if (gateStatus) {
-                    gateStatus.textContent = "❌ CAMERA ACCESS DENIED — You cannot take this exam without webcam.";
-                    gateStatus.style.color = "var(--red)";
+                    gateStatus.textContent = "Camera access failed. Check your browser permission and try again.";
+                    gateStatus.style.color = "var(--danger)";
                 }
-                enableBtn.textContent = "[ TRY AGAIN ]";
+                enableBtn.textContent = "Try camera again";
                 enableBtn.classList.remove("loading");
             });
     };
@@ -327,9 +341,9 @@
         const pct = Math.min(score * 2, 100);
         if (threatFill) {
             threatFill.style.width = pct + "%";
-            if (pct < 30) { threatFill.style.background = "var(--green)"; threatText.textContent = "LOW"; threatText.style.color = "var(--green)"; }
-            else if (pct < 60) { threatFill.style.background = "var(--amber)"; threatText.textContent = "MEDIUM"; threatText.style.color = "var(--amber)"; }
-            else { threatFill.style.background = "var(--red)"; threatText.textContent = "HIGH"; threatText.style.color = "var(--red)"; }
+            if (pct < 30) { threatFill.style.background = "var(--success)"; threatText.textContent = "Low"; threatText.style.color = "var(--success)"; }
+            else if (pct < 60) { threatFill.style.background = "var(--warning)"; threatText.textContent = "Moderate"; threatText.style.color = "var(--warning)"; }
+            else { threatFill.style.background = "var(--danger)"; threatText.textContent = "Elevated"; threatText.style.color = "var(--danger)"; }
         }
     }
 
@@ -348,7 +362,8 @@
 
     const YAW_THRESHOLD   = 25;
     const PITCH_THRESHOLD = 20;
-    let lastHeadEventTime = 0;
+    let lastHeadEventTime = Date.now();
+    let faceMeshRetries = 0;
     const HEAD_COOLDOWN_MS = 2000;
 
     function initFaceMesh() {
@@ -357,8 +372,14 @@
         const canvasCtx = canvasEl ? canvasEl.getContext("2d") : null;
 
         if (typeof FaceMesh === "undefined") {
-            if (webcamStatus) webcamStatus.textContent = "FACE MESH LOADING...";
-            setTimeout(initFaceMesh, 500);
+            faceMeshRetries++;
+            if (faceMeshRetries <= 20) {
+                if (webcamStatus) webcamStatus.textContent = "LOADING FACE TRACKING…";
+                setTimeout(initFaceMesh, 500);
+            } else if (webcamStatus) {
+                webcamStatus.textContent = "CAMERA ACTIVE";
+                showAlert("Face tracking could not load. Camera monitoring remains active.");
+            }
             return;
         }
 
@@ -398,7 +419,7 @@
             if (webcamStatus) webcamStatus.textContent = "ACTIVE";
 
             const landmarks = results.multiFaceLandmarks[0];
-            canvasCtx.strokeStyle = "rgba(0, 255, 65, 0.5)";
+            canvasCtx.strokeStyle = "rgba(54, 95, 229, 0.6)";
             canvasCtx.lineWidth = 1;
             drawFaceOutline(canvasCtx, canvasEl, landmarks);
 
@@ -421,15 +442,15 @@
             const lookingAway = Math.abs(yaw) > YAW_THRESHOLD || pitch > PITCH_THRESHOLD;
 
             if (lookingAway) {
-                canvasCtx.fillStyle = "rgba(255, 45, 85, 0.3)";
+                canvasCtx.fillStyle = "rgba(184, 50, 60, 0.3)";
                 canvasCtx.fillRect(0, 0, canvasEl.width, canvasEl.height);
-                canvasCtx.fillStyle = "#ff2d55";
-                canvasCtx.font = "bold 12px 'Share Tech Mono', monospace";
-                canvasCtx.fillText("⚠ LOOK AT SCREEN", 10, 20);
+                canvasCtx.fillStyle = "#b8323c";
+                canvasCtx.font = "bold 12px Arial, sans-serif";
+                canvasCtx.fillText("LOOK TOWARD SCREEN", 10, 20);
             } else {
-                canvasCtx.fillStyle = "#00ff41";
-                canvasCtx.font = "10px 'Share Tech Mono', monospace";
-                canvasCtx.fillText("✓ OK", 10, 16);
+                canvasCtx.fillStyle = "#16845b";
+                canvasCtx.font = "10px Arial, sans-serif";
+                canvasCtx.fillText("FACE VISIBLE", 10, 16);
             }
 
             const now = Date.now();
@@ -444,10 +465,14 @@
 
         // Process frames
         async function processFrame() {
-            if (!state.submitted) {
+            if (state.submitted || !state.examStarted) return;
+            try {
                 await faceMesh.send({ image: videoEl });
+                window.setTimeout(processFrame, 150);
+            } catch (error) {
+                console.error("Face tracking failed:", error);
+                if (webcamStatus) webcamStatus.textContent = "CAMERA ACTIVE";
             }
-            requestAnimationFrame(processFrame);
         }
         processFrame();
         if (webcamStatus) webcamStatus.textContent = "ACTIVE";
@@ -496,13 +521,20 @@
         };
 
         try {
-            await fetch("/submit_exam", {
+            const response = await fetch("/submit_exam", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
+            if (!response.ok) throw new Error(`Submission failed (${response.status})`);
+            const result = await response.json();
+            if (result.status !== "ok" || !result.redirect) {
+                throw new Error(result.msg || "The server did not confirm the submission");
+            }
+            return result.redirect;
         } catch (err) {
             console.error("Submission error:", err);
+            return null;
         }
     }
 
@@ -510,9 +542,16 @@
         if (state.submitted) return;
         state.submitted = true;
         submitBtn.disabled = true;
-        submitBtn.textContent = "[ SUBMITTING... ]";
+        submitBtn.textContent = "Submitting…";
 
-        await sendExamData(false);
+        const redirectUrl = await sendExamData(false);
+        if (!redirectUrl) {
+            state.submitted = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Try submitting again";
+            showAlert("We could not submit your assessment. Check your connection and try again.");
+            return;
+        }
 
         // Stop webcam
         const videoEl = document.getElementById("webcamVideo");
@@ -520,42 +559,7 @@
             videoEl.srcObject.getTracks().forEach(t => t.stop());
         }
 
-        window.location.href = "/result";
+        window.location.href = redirectUrl;
     });
-
-    // ── Matrix Rain for exam page ────────────────────────────────────────
-    (function(){
-        const canvas = document.getElementById('matrix-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let W, H, cols, drops;
-        const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*ﾊﾋｼﾀﾁﾃﾄﾘｳｺﾈ';
-        const FS = 14;
-        function init() {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-            cols = Math.floor(W / FS);
-            drops = Array.from({length: cols}, () => Math.random() * -80);
-        }
-        function draw() {
-            ctx.fillStyle = 'rgba(2,13,2,0.055)';
-            ctx.fillRect(0, 0, W, H);
-            for (let i = 0; i < cols; i++) {
-                const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
-                const y = drops[i] * FS;
-                ctx.fillStyle = '#afffcf';
-                ctx.font = `bold ${FS}px "Share Tech Mono",monospace`;
-                ctx.fillText(ch, i * FS, y);
-                ctx.fillStyle = i % 5 === 0 ? '#00ff41' : '#00881a';
-                ctx.font = `${FS}px "Share Tech Mono",monospace`;
-                ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], i * FS, y - FS);
-                if (y > H && Math.random() > 0.975) drops[i] = 0;
-                drops[i] += 0.5;
-            }
-        }
-        init();
-        setInterval(draw, 45);
-        window.addEventListener('resize', init);
-    })();
 
 })();
