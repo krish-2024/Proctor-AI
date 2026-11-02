@@ -18,7 +18,9 @@ The recorded behavior is passed through an Isolation Forest model to detect unus
 
 - Student and examiner login flow
 - Responsive light and dark themes
-- Exam portal with MCQ and written questions
+- Student dashboard with available and attempted tests
+- Four topic-based tests: DSA, analytical skills, logical reasoning, and ML concepts
+- Mixed multiple-choice and written questions
 - webcam permission gate before exam starts
 - violation tracking with automatic submission after repeated suspicious behavior
 - ML-based anomaly detection
@@ -68,6 +70,7 @@ ProctorAI/
 ├── model.py
 ├── requirements.txt
 ├── templates/
+│   ├── dashboard.html
 │   ├── login.html
 │   ├── exam.html
 │   ├── result.html

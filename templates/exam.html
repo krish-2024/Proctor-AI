@@ -12,10 +12,10 @@
 <header class="exam-topbar">
   <div class="exam-brand">
     <span class="brand-mark" aria-hidden="true">P</span>
-    <span><span class="exam-brand-name">ProctorAI</span><span class="exam-brand-sub">Assessment workspace</span></span>
+    <span><span class="exam-brand-name">ProctorAI</span><span class="exam-brand-sub">{{ test.name }}</span></span>
   </div>
   <div class="exam-top-actions">
-    <span class="exam-brand-sub">Secure assessment session</span>
+    <span class="exam-test-title">{{ test.short_name }} · {{ test.duration }} min</span>
     <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme"><span class="theme-icon">☾</span></button>
   </div>
 </header>

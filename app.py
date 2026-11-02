@@ -8,7 +8,8 @@ Routes:
   /register     -> POST: create new user
   /login        -> POST: authenticate user
   /logout       -> Clear session
-  /exam         -> Exam interface (student only)
+  /dashboard    -> Student test selection and attempt history
+  /exam         -> Selected exam interface (student only)
   /submit_exam  -> POST: receive answers + behavior data, run ML prediction
   /result       -> Exam result page
   /admin        -> Admin dashboard (examiner only)
@@ -17,6 +18,7 @@ Routes:
 
 import os
 import json
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from model import predict_behavior, train_model, load_model, MODEL_PATH, FEATURE_COLS
 
@@ -29,46 +31,77 @@ USERS_FILE = os.path.join(BASE_DIR, "users.json")
 # In-memory exam records
 exam_records = []
 
-# ─── Questions ────────────────────────────────────────────────────────────────
-# type: "mcq" (multiple choice) or "text" (writing answer)
-QUESTIONS = [
-    {"id": 1, "type": "mcq", "question": "What is the time complexity of binary search?",
-     "options": ["O(n)", "O(log n)", "O(n²)", "O(1)"], "answer": "O(log n)"},
-    {"id": 2, "type": "mcq", "question": "Which data structure uses FIFO ordering?",
-     "options": ["Stack", "Queue", "Tree", "Graph"], "answer": "Queue"},
-    {"id": 3, "type": "mcq", "question": "What does CPU stand for?",
-     "options": ["Central Processing Unit", "Central Program Utility", "Computer Personal Unit", "Central Processor Unifier"],
-     "answer": "Central Processing Unit"},
-    {"id": 4, "type": "mcq", "question": "Which sorting algorithm has the best average-case time complexity?",
-     "options": ["Bubble Sort", "Selection Sort", "Merge Sort", "Insertion Sort"], "answer": "Merge Sort"},
-    {"id": 5, "type": "mcq", "question": "What is the primary function of an operating system?",
-     "options": ["Compile code", "Manage hardware resources", "Browse the internet", "Design databases"],
-     "answer": "Manage hardware resources"},
-    {"id": 6, "type": "mcq", "question": "Which protocol is used for secure web browsing?",
-     "options": ["HTTP", "FTP", "HTTPS", "SMTP"], "answer": "HTTPS"},
-    {"id": 7, "type": "mcq", "question": "What is a primary key in a database?",
-     "options": ["A key used for encryption", "A unique identifier for records", "A foreign reference", "A backup key"],
-     "answer": "A unique identifier for records"},
-    {"id": 8, "type": "mcq", "question": "Which ML technique is used for anomaly detection?",
-     "options": ["Linear Regression", "Isolation Forest", "K-Means Clustering", "Naive Bayes"],
-     "answer": "Isolation Forest"},
-    {"id": 9, "type": "mcq", "question": "What does HTML stand for?",
-     "options": ["Hyper Text Markup Language", "High Tech Machine Learning", "Hyper Transfer Markup Language", "Home Tool Markup Language"],
-     "answer": "Hyper Text Markup Language"},
-    {"id": 10, "type": "mcq", "question": "Which of the following is NOT a programming language?",
-     "options": ["Python", "Java", "HTML", "C++"], "answer": "HTML"},
-    # ─── Writing Questions ─────────────────────────────────────────────────
-    {"id": 11, "type": "text", "question": "Explain how a stack data structure works. Give an example of where it is used.",
-     "keywords": ["lifo", "last in first out", "push", "pop", "function call", "recursion", "undo"]},
-    {"id": 12, "type": "text", "question": "What is the difference between TCP and UDP? When would you use each?",
-     "keywords": ["reliable", "connection", "connectionless", "packet", "streaming", "handshake", "order"]},
-    {"id": 13, "type": "text", "question": "Describe what an operating system kernel does and why it is important.",
-     "keywords": ["kernel", "hardware", "memory", "process", "system call", "driver", "resource"]},
-    {"id": 14, "type": "text", "question": "What is normalization in databases? Why is it needed?",
-     "keywords": ["redundancy", "duplicate", "table", "normal form", "1nf", "2nf", "3nf", "dependency"]},
-    {"id": 15, "type": "text", "question": "Explain how the Isolation Forest algorithm detects anomalies.",
-     "keywords": ["tree", "isolation", "split", "path", "outlier", "anomaly", "random", "fewer"]},
-]
+# Questions use simple keyword scoring for written responses, for demonstration only.
+TESTS = {
+    "dsa": {
+        "id": "dsa", "name": "Data Structures & Algorithms",
+        "short_name": "DSA", "description": "Core data structures, searching and sorting.",
+        "level": "Foundations", "duration": 10, "icon": "DS",
+        "questions": [
+            {"id": 1, "type": "mcq", "question": "What is the time complexity of binary search on a sorted array?",
+             "options": ["O(n)", "O(log n)", "O(n log n)", "O(1)"], "answer": "O(log n)"},
+            {"id": 2, "type": "mcq", "question": "Which data structure follows the FIFO principle?",
+             "options": ["Stack", "Queue", "Tree", "Heap"], "answer": "Queue"},
+            {"id": 3, "type": "mcq", "question": "Which traversal of a binary search tree returns values in sorted order?",
+             "options": ["Preorder", "Postorder", "Inorder", "Level order"], "answer": "Inorder"},
+            {"id": 4, "type": "mcq", "question": "What is the average time complexity of merge sort?",
+             "options": ["O(n)", "O(log n)", "O(n log n)", "O(n²)"], "answer": "O(n log n)"},
+            {"id": 5, "type": "text", "question": "Describe the LIFO principle and name one common use of a stack.",
+             "keywords": ["lifo", "last in first out", "push", "pop", "function", "undo", "stack"]},
+        ],
+    },
+    "analytical": {
+        "id": "analytical", "name": "Analytical Skills",
+        "short_name": "Analytical", "description": "A mixed-format set of logic, data and quantitative questions.",
+        "level": "Mixed format", "duration": 10, "icon": "AN",
+        "questions": [
+            {"id": 1, "type": "mcq", "question": "A product costs $80 after a 20% discount. What was its original price?",
+             "options": ["$96", "$100", "$104", "$120"], "answer": "$100"},
+            {"id": 2, "type": "mcq", "question": "Find the next number: 3, 7, 15, 31, …",
+             "options": ["47", "55", "63", "64"], "answer": "63"},
+            {"id": 3, "type": "mcq", "question": "A team completes 2/5 of a project in 4 days at a steady rate. How many days are needed for the whole project?",
+             "options": ["8", "10", "12", "20"], "answer": "10"},
+            {"id": 4, "type": "mcq", "question": "All analysts use data. Mira is an analyst. Which statement follows?",
+             "options": ["Mira uses data", "Mira manages a team", "All data users are analysts", "No conclusion follows"], "answer": "Mira uses data"},
+            {"id": 5, "type": "text", "question": "A store's weekly visitors rose from 200 to 250. Explain the percentage increase.",
+             "keywords": ["25", "increase", "50", "200", "percent", "%"]},
+        ],
+    },
+    "reasoning": {
+        "id": "reasoning", "name": "Logical Reasoning",
+        "short_name": "Reasoning", "description": "Patterns, deduction and structured problem solving.",
+        "level": "Foundations", "duration": 10, "icon": "LR",
+        "questions": [
+            {"id": 1, "type": "mcq", "question": "If every Nori is a Vela and every Vela is a Tavi, which must be true?",
+             "options": ["Every Tavi is a Nori", "Every Nori is a Tavi", "No Nori is a Tavi", "Some Vela are not Tavi"], "answer": "Every Nori is a Tavi"},
+            {"id": 2, "type": "mcq", "question": "Choose the item that does not belong.",
+             "options": ["Triangle", "Square", "Circle", "Cube"], "answer": "Cube"},
+            {"id": 3, "type": "mcq", "question": "If today is Wednesday, what day will it be 10 days from today?",
+             "options": ["Friday", "Saturday", "Sunday", "Monday"], "answer": "Saturday"},
+            {"id": 4, "type": "mcq", "question": "Find the next letter: A, C, F, J, O, …",
+             "options": ["S", "T", "U", "V"], "answer": "U"},
+            {"id": 5, "type": "text", "question": "If all red boxes are heavy and a box is red, what can you conclude about that box?",
+             "keywords": ["heavy", "red", "box"]},
+        ],
+    },
+    "ml": {
+        "id": "ml", "name": "Machine Learning Concepts",
+        "short_name": "ML Concepts", "description": "Model types, evaluation and fundamental ML ideas.",
+        "level": "Foundations", "duration": 10, "icon": "ML",
+        "questions": [
+            {"id": 1, "type": "mcq", "question": "Which task is supervised learning?",
+             "options": ["Grouping unlabeled customers", "Predicting house prices from labeled examples", "Compressing images", "Randomly sampling data"], "answer": "Predicting house prices from labeled examples"},
+            {"id": 2, "type": "mcq", "question": "What is a common purpose of a validation dataset?",
+             "options": ["Tune model choices", "Replace all training data", "Encrypt the labels", "Guarantee perfect accuracy"], "answer": "Tune model choices"},
+            {"id": 3, "type": "mcq", "question": "Which metric is often more informative than accuracy on a highly imbalanced dataset?",
+             "options": ["Precision and recall", "Number of features", "Training duration", "File size"], "answer": "Precision and recall"},
+            {"id": 4, "type": "mcq", "question": "What does overfitting usually mean?",
+             "options": ["Model performs well on training data but poorly on new data", "Model has too few training examples to run", "Model always predicts the majority class", "Model has no parameters"], "answer": "Model performs well on training data but poorly on new data"},
+            {"id": 5, "type": "text", "question": "In your own words, what does an Isolation Forest use to identify unusual observations?",
+             "keywords": ["isolation", "tree", "random", "split", "outlier", "path", "anomaly"]},
+        ],
+    },
+}
 
 # ─── User helpers ─────────────────────────────────────────────────────────────
 def get_users():
@@ -137,7 +170,7 @@ def login():
         return jsonify({"ok": False, "msg": "Invalid credentials."})
 
     session["user"] = user
-    redirect_url = "/admin" if user["role"] == "examiner" else "/exam"
+    redirect_url = "/admin" if user["role"] == "examiner" else "/dashboard"
     return jsonify({"ok": True, "msg": f"Welcome, {user['fname']}!", "redirect": redirect_url})
 
 @app.route("/logout")
@@ -145,11 +178,31 @@ def logout():
     session.clear()
     return redirect(url_for("index"))
 
+@app.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect(url_for("index"))
+    user = session["user"]
+    if user.get("role") == "examiner":
+        return redirect(url_for("admin"))
+    attempts = [
+        record for record in exam_records
+        if record.get("student_email") == user.get("email", "").lower()
+    ]
+    return render_template("dashboard.html", user=user, tests=TESTS.values(), attempts=attempts)
+
 @app.route("/exam")
 def exam():
     if "user" not in session:
         return redirect(url_for("index"))
-    return render_template("exam.html", questions=QUESTIONS, user=session["user"])
+    if session["user"].get("role") != "student":
+        return redirect(url_for("admin"))
+    test_id = request.args.get("test", "")
+    selected_test = TESTS.get(test_id)
+    if not selected_test:
+        return redirect(url_for("dashboard"))
+    session["active_test_id"] = test_id
+    return render_template("exam.html", questions=selected_test["questions"], user=session["user"], test=selected_test)
 
 @app.route("/submit_exam", methods=["POST"])
 def submit_exam():
@@ -158,6 +211,11 @@ def submit_exam():
 
     data = request.get_json()
     user = session["user"]
+    test_id = session.get("active_test_id")
+    selected_test = TESTS.get(test_id)
+    if not selected_test:
+        return jsonify({"status": "error", "msg": "Select an assessment before submitting."}), 400
+    questions = selected_test["questions"]
 
     behavior = {
         "time_per_question":   round(float(data.get("time_per_question", 30)), 2),
@@ -176,21 +234,25 @@ def submit_exam():
     auto_submitted = bool(data.get("auto_submitted", False))
 
     # Score MCQ questions (exact match)
-    correct = sum(1 for q in QUESTIONS if q["type"] == "mcq" and answers.get(str(q["id"])) == q["answer"])
+    correct = sum(1 for q in questions if q["type"] == "mcq" and answers.get(str(q["id"])) == q["answer"])
 
     # Score text questions (keyword matching — at least 2 keywords = 1 point)
-    for q in QUESTIONS:
+    for q in questions:
         if q["type"] == "text":
             student_text = text_answers.get(str(q["id"]), "").lower()
             matched = sum(1 for kw in q["keywords"] if kw in student_text)
             if matched >= 2:
                 correct += 1
 
-    total = len(QUESTIONS)
+    total = len(questions)
 
     record = {
+        "student_email": user.get("email", "").lower(),
         "student_id":   user.get("roll", "N/A"),
         "student_name": f"{user['fname']} {user['lname']}",
+        "test_id":      test_id,
+        "test_name":    selected_test["name"],
+        "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "score":        f"{correct}/{total}",
         "correct":      correct,
         "total":        total,
@@ -203,6 +265,7 @@ def submit_exam():
     }
     exam_records.append(record)
     session["exam_result"] = record
+    session.pop("active_test_id", None)
 
     return jsonify({"status": "ok", "redirect": url_for("result")})
 
@@ -220,7 +283,10 @@ def admin():
 
 @app.route("/api/students")
 def api_students():
-    return jsonify(exam_records)
+    return jsonify([
+        {key: value for key, value in record.items() if key != "student_email"}
+        for record in exam_records
+    ])
 
 # ─── Entry Point ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":

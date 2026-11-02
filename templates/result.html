@@ -22,12 +22,14 @@
         <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
       <h1 class="result-title">EXAM COMPLETED</h1>
+      <p class="result-test-name">{{ result.test_name }}</p>
       <div class="status-badge badge-ok">No unusual behavior flagged</div>
       {% else %}
       <div class="result-icon-ring warn">
         <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
       <h1 class="result-title">EXAM COMPLETED</h1>
+      <p class="result-test-name">{{ result.test_name }}</p>
       <div class="status-badge badge-warn">Behavior alert — examiner review recommended</div>
       {% endif %}
     </div>
@@ -83,7 +85,8 @@
 
     <!-- Actions -->
     <div class="result-actions">
-      <a href="/logout" class="submit-btn" style="text-align:center">Finish and sign out</a>
+      <a href="/dashboard" class="submit-btn" style="text-align:center">Back to assessments</a>
+      <a href="/logout" class="submit-btn secondary-action" style="text-align:center">Sign out</a>
     </div>
   </div>
 </div>

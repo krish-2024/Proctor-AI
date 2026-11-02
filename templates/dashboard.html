@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assessments | ProctorAI</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/app-theme.css">
+<script src="/static/theme.js" defer></script>
+</head>
+<body class="student-dashboard">
+<header class="exam-topbar dashboard-topbar">
+  <a class="exam-brand" href="/dashboard" aria-label="ProctorAI home">
+    <span class="brand-mark" aria-hidden="true">P</span>
+    <span><span class="exam-brand-name">ProctorAI</span><span class="exam-brand-sub">Assessment workspace</span></span>
+  </a>
+  <div class="dashboard-user">
+    <span class="welcome-name">Hello, {{ user.fname }}</span>
+    <span class="exam-brand-sub">{{ user.roll }}</span>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme"><span class="theme-icon">☾</span></button>
+    <a class="dashboard-signout" href="/logout">Sign out</a>
+  </div>
+</header>
+
+<main class="student-dashboard-main">
+  <section class="dashboard-welcome">
+    <div>
+      <p class="dashboard-eyebrow">YOUR LEARNING SPACE</p>
+      <h1>Assessments</h1>
+      <p>Choose a topic to begin. Your completed attempts will appear here.</p>
+    </div>
+    <div class="attempt-summary">
+      <span class="attempt-summary-count">{{ attempts|length }}</span>
+      <span>completed<br>attempts</span>
+    </div>
+  </section>
+
+  <section class="test-section" aria-labelledby="available-title">
+    <div class="section-heading">
+      <div>
+        <h2 id="available-title">Available tests</h2>
+        <p>Pick a subject and start when you're ready.</p>
+      </div>
+      <span class="section-count">{{ tests|length }} tests</span>
+    </div>
+    <div class="test-grid">
+      {% for test in tests %}
+      <article class="test-card">
+        <div class="test-card-top">
+          <span class="test-icon">{{ test.icon }}</span>
+          <span class="test-level">{{ test.level }}</span>
+        </div>
+        <h3>{{ test.name }}</h3>
+        <p>{{ test.description }}</p>
+        <div class="test-meta">
+          <span>{{ test.questions|length }} questions</span>
+          <span>{{ test.duration }} min</span>
+        </div>
+        <a class="test-start" href="{{ url_for('exam', test=test.id) }}">Attempt test <span aria-hidden="true">→</span></a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="test-section attempts-section" aria-labelledby="attempts-title">
+    <div class="section-heading">
+      <div>
+        <h2 id="attempts-title">Attempted tests</h2>
+        <p>Your submitted tests and scores from this session.</p>
+      </div>
+    </div>
+    {% if attempts %}
+    <div class="attempt-list">
+      {% for attempt in attempts|reverse %}
+      <article class="attempt-row">
+        <span class="attempt-icon">✓</span>
+        <div class="attempt-detail">
+          <h3>{{ attempt.test_name }}</h3>
+          <span>{{ attempt.submitted_at }}</span>
+        </div>
+        <span class="attempt-score">{{ attempt.score }}</span>
+        <span class="badge {% if attempt.label == 'Normal' %}badge-ok{% else %}badge-warn{% endif %}">
+          {% if attempt.label == 'Normal' %}No alert{% else %}Review recommended{% endif %}
+        </span>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="attempt-empty">
+      <span class="attempt-empty-icon">☷</span>
+      <h3>No attempts yet</h3>
+      <p>Completed assessments and scores will show here.</p>
+    </div>
+    {% endif %}
+    <p class="dashboard-note">Activity flags are automated indicators for examiner review, not proof of misconduct. Attempts are held in memory and will clear when the server restarts.</p>
+  </section>
+</main>
+</body>
+</html>
