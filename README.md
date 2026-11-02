@@ -1,10 +1,10 @@
-# ProctorAI
+# ProctorAI — Online Assessment & Monitoring Demo
 
-A simple exam monitoring system built to detect suspicious online exam behavior using webcam activity, browser interaction signals, and machine learning anomaly detection.
+A student-facing online assessment demo with topic-based tests, an examiner dashboard, and transparent behavior monitoring. Students can choose a subject, complete a mixed-format assessment, and review their past attempts.
 
 ## Overview
 
-This project simulates an online proctoring workflow where a student takes an exam while the system monitors:
+After signing in, students see available tests and their completed attempts. During a selected assessment, the app records browser interaction and webcam-derived signals:
 
 - webcam presence and head movement
 - tab switching
@@ -12,14 +12,14 @@ This project simulates an online proctoring workflow where a student takes an ex
 - answer changes
 - copy/paste attempts
 
-The recorded behavior is passed through an Isolation Forest model to detect unusual activity and flag suspicious results.
+The recorded behavior is passed to an Isolation Forest model, which may flag unusual patterns for examiner review. These automated flags are demonstrative indicators, not proof of misconduct.
 
 ## Features
 
 - Student and examiner login flow
 - Responsive light and dark themes
 - Student dashboard with available and attempted tests
-- Four topic-based tests: DSA, analytical skills, logical reasoning, and ML concepts
+- Four topic-based tests: Data Structures & Algorithms, Analytical Skills, Logical Reasoning, and Machine Learning Concepts
 - Mixed multiple-choice and written questions
 - webcam permission gate before exam starts
 - violation tracking with automatic submission after repeated suspicious behavior
